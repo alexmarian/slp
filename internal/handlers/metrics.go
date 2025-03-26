@@ -26,9 +26,16 @@ func MiddlewareLog(next http.Handler) http.Handler {
 }
 
 func (cfg *ApiConfig) HandleMetrics(rw http.ResponseWriter, req *http.Request) {
-	rw.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	rw.Header().Add("Content-Type", "text/html; charset=utf-8")
 	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte(fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())))
+	metrics := fmt.Sprintf(
+		`<html>
+					<body>
+						<h1>Welcome, Chirpy Admin</h1>
+						<p>Chirpy has been visited %d times!</p>
+					</body>
+				</html>`, cfg.fileserverHits.Load())
+	rw.Write([]byte(metrics))
 }
 
 func (cfg *ApiConfig) HandleReset(rw http.ResponseWriter, req *http.Request) {
