@@ -5,33 +5,40 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
 
 func HandleValidateChirp(rw http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
 	chirp := ChirpValidationRequest{}
-	response := ChirpValidationResponse{}
 	err := decoder.Decode(&chirp)
 	if err != nil {
-		response.Error = fmt.Sprintf("Error decoding chirp: %s", err)
-		log.Printf(response.Error)
-		rw.WriteHeader(http.StatusInternalServerError)
-	} else {
-		if len(chirp.Body) > 140 {
-			response.Valid = false
-			response.Error = "Chirp is too long"
-			rw.WriteHeader(http.StatusBadRequest)
-		} else {
-			response.Valid = true
-			rw.WriteHeader(http.StatusOK)
-		}
-	}
-	data, err := json.Marshal(response)
-	if err != nil {
-		log.Printf("Error encoding response: %s", err)
-		rw.WriteHeader(http.StatusInternalServerError)
+		var errors = fmt.Sprintf("Error decoding chirp: %s", err)
+		log.Printf(errors)
+		respondWithError(rw, http.StatusBadRequest, errors)
 		return
 	}
-	rw.Header().Add("Content-Type", "application/json; charset=utf-8")
-	rw.Write(data)
+	response := ChirpValidationResponse{}
+	if len(chirp.Body) > 140 {
+		response.Error = "Chirp is too long"
+		respondWithJSON(rw, http.StatusBadRequest, response)
+		return
+	}
+	badWords := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert":  {},
+		"fornax":    {},
+	}
+	response.CleanedBody = cleanBody(chirp.Body, badWords)
+	respondWithJSON(rw, http.StatusOK, response)
+}
+
+func cleanBody(body string, badWords map[string]struct{}) string {
+	tokens := strings.Split(body, " ")
+	for i, token := range tokens {
+		if _, ok := badWords[strings.ToLower(token)]; ok {
+			tokens[i] = "****"
+		}
+	}
+	return strings.Join(tokens, " ")
 }

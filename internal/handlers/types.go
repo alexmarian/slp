@@ -4,6 +4,6 @@ type ChirpValidationRequest struct {
 	Body string `json:"body"`
 }
 type ChirpValidationResponse struct {
-	Valid bool   `json:"valid"`
-	Error string `json:"error"`
+	CleanedBody string `json:"cleaned_body"`
+	Error       string `json:"error"`
 }
