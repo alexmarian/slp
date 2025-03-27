@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/alexmarian/slp/internal/database"
 	"log"
 	"net/http"
 	"sync/atomic"
@@ -9,6 +10,12 @@ import (
 
 type ApiConfig struct {
 	fileserverHits atomic.Int32
+	Db             *database.Queries
+	Platform       string
+}
+
+func (api *ApiConfig) IsDev() bool {
+	return api.Platform == "dev"
 }
 
 func (cfg *ApiConfig) MiddlewareMetricsInc(next http.Handler) http.Handler {
@@ -40,7 +47,13 @@ func (cfg *ApiConfig) HandleMetrics(rw http.ResponseWriter, req *http.Request) {
 
 func (cfg *ApiConfig) HandleReset(rw http.ResponseWriter, req *http.Request) {
 	cfg.fileserverHits.Swap(0)
-	rw.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte("Metrics reset"))
+	if cfg.IsDev() {
+		log.Printf("Metrics reset")
+		cfg.Db.DeleteUsers(req.Context())
+		rw.Header().Add("Content-Type", "text/plain; charset=utf-8")
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte("Metrics reset"))
+	} else {
+		respondWithError(rw, http.StatusForbidden, "Reset only allowed in dev")
+	}
 }
