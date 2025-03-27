@@ -1,5 +1,6 @@
 package main
 
+import _ "github.com/lib/pq"
 import (
 	"github.com/alexmarian/slp/internal/handlers"
 	"log"
