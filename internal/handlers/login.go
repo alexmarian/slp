@@ -34,7 +34,7 @@ func HandleLogin(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 			respondWithError(rw, http.StatusInternalServerError, errors)
 			return
 		}
-		err = auth.CheckPasswordHash(user.HashedPassword, request.Password)
+		err = auth.CheckPasswordHash(request.Password, user.HashedPassword)
 		if err != nil {
 			respondWithError(rw, http.StatusUnauthorized, "Incorrect email or password")
 			return
