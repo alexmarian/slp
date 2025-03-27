@@ -5,12 +5,17 @@ import (
 	"time"
 )
 
-type ChirpValidationRequest struct {
-	Body string `json:"body"`
+type ChirpCreationRequest struct {
+	Body   string    `json:"body"`
+	UserId uuid.UUID `json:"user_id"`
 }
-type ChirpValidationResponse struct {
-	CleanedBody string `json:"cleaned_body"`
-	Error       string `json:"error"`
+type ChirpCreationResponse struct {
+	Id        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserId    string    `json:"user_id"`
+	Error     string    `json:"error"`
 }
 
 type CreateUserRequest struct {
