@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/alexmarian/slp/internal/database"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"strings"
@@ -84,5 +85,30 @@ func HandleGetChirps(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 			})
 		}
 		respondWithJSON(w, http.StatusOK, response)
+	}
+}
+func HandleGetChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		chirpID, parseIdErr := uuid.Parse(r.PathValue("chirpID"))
+		if parseIdErr != nil {
+			var errors = fmt.Sprintf("Error parsing chirp ID: %s", parseIdErr)
+			log.Printf(errors)
+			respondWithError(w, http.StatusBadRequest, errors)
+			return
+		}
+		chirp, err := cfg.Db.GetChirpById(r.Context(), chirpID)
+		if err != nil {
+			var errors = fmt.Sprintf("Error getting chirps: %s", err)
+			log.Printf(errors)
+			respondWithError(w, http.StatusInternalServerError, errors)
+			return
+		}
+		respondWithJSON(w, http.StatusOK, Chirp{
+			Id:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserId:    chirp.UserID,
+		})
 	}
 }

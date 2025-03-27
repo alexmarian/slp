@@ -8,3 +8,6 @@ VALUES (gen_random_uuid(),
 
 -- name: GetAllChirps :many
 SELECT * FROM chirps order by created_at asc;
+
+-- name: GetChirpById :one
+SELECT * FROM chirps WHERE id = $1;

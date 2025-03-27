@@ -17,11 +17,12 @@ type Chirp struct {
 	UserId    uuid.UUID `json:"user_id"`
 }
 
-type CreateUserRequest struct {
-	Email string `json:"email"`
+type UserRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
-type CreateUserResponse struct {
+type User struct {
 	Id        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
