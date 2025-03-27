@@ -47,7 +47,7 @@ func HandleCreateChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) 
 			CreatedAt: createChirp.CreatedAt,
 			UpdatedAt: createChirp.UpdatedAt,
 			Body:      createChirp.Body,
-			UserId:    createChirp.UserID.String(),
+			UserId:    createChirp.UserID,
 		}
 		response.Body = cleanBody(chirp.Body, badWords)
 		respondWithJSON(w, http.StatusCreated, response)
@@ -62,4 +62,27 @@ func cleanBody(body string, badWords map[string]struct{}) string {
 		}
 	}
 	return strings.Join(tokens, " ")
+}
+
+func HandleGetChirps(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		chirps, err := cfg.Db.GetAllChirps(r.Context())
+		if err != nil {
+			var errors = fmt.Sprintf("Error getting chirps: %s", err)
+			log.Printf(errors)
+			respondWithError(w, http.StatusInternalServerError, errors)
+			return
+		}
+		var response []Chirp
+		for _, chirp := range chirps {
+			response = append(response, Chirp{
+				Id:        chirp.ID,
+				CreatedAt: chirp.CreatedAt,
+				UpdatedAt: chirp.UpdatedAt,
+				Body:      chirp.Body,
+				UserId:    chirp.UserID,
+			})
+		}
+		respondWithJSON(w, http.StatusOK, response)
+	}
 }

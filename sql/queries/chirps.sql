@@ -7,4 +7,4 @@ VALUES (gen_random_uuid(),
         $2) RETURNING *;
 
 -- name: GetAllChirps :many
-SELECT * FROM chirps;
+SELECT * FROM chirps order by created_at asc;
