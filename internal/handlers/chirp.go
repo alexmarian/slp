@@ -21,8 +21,8 @@ func HandleCreateChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) 
 			return
 		}
 		if len(chirp.Body) > 140 {
-			response := ChirpCreationResponse{}
-			response.Error = "Chirp is too long"
+			response := Chirp{}
+			response.Body = "Chirp is too long"
 			respondWithJSON(w, http.StatusBadRequest, response)
 			return
 		}
@@ -42,7 +42,7 @@ func HandleCreateChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) 
 			respondWithError(w, http.StatusInternalServerError, errors)
 			return
 		}
-		response := ChirpCreationResponse{
+		response := Chirp{
 			Id:        createChirp.ID,
 			CreatedAt: createChirp.CreatedAt,
 			UpdatedAt: createChirp.UpdatedAt,
