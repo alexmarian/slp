@@ -102,6 +102,7 @@ func HandleRefresh(cfg *ApiConfig) http.HandlerFunc {
 		resp := response{
 			Token: token,
 		}
+		//rw.Header().Set("Set-Cookie", fmt.Sprintf("id=a3fWa; Expires=%s; Secure; HttpOnly", time.Now().Add(3600*time.Second).UTC().Format(time.RFC1123)))
 		respondWithJSON(rw, http.StatusOK, resp)
 	}
 }
