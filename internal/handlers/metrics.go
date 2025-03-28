@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"github.com/alexmarian/slp/internal/auth"
 	"github.com/alexmarian/slp/internal/database"
@@ -46,8 +45,7 @@ func (cfg *ApiConfig) MiddlewareAuth(next http.HandlerFunc) http.HandlerFunc {
 			respondWithError(w, http.StatusUnauthorized, err.Error())
 			return
 		}
-		ctx := context.WithValue(r.Context(), "userID", userId)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, addUserIdToContext(r, userId))
 	}
 }
 

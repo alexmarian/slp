@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 )
+
+const userContextKey = "userID"
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
@@ -21,4 +25,12 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 		return
 	}
 	w.Write(data)
+}
+
+func addUserIdToContext(req *http.Request, userID uuid.UUID) *http.Request {
+	return req.WithContext(context.WithValue(req.Context(), userContextKey, userID))
+}
+
+func getUserIdFromContext(req *http.Request) uuid.UUID {
+	return req.Context().Value(userContextKey).(uuid.UUID)
 }
