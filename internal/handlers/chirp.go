@@ -34,7 +34,7 @@ func HandleCreateChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) 
 		}
 		ccp := database.CreateChirpParams{
 			Body:   chirp.Body,
-			UserID: chirp.UserId,
+			UserID: r.Context().Value("userID").(uuid.UUID),
 		}
 		createChirp, err := cfg.Db.CreateChirp(r.Context(), ccp)
 		if err != nil {

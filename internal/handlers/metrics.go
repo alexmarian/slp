@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
+	"github.com/alexmarian/slp/internal/auth"
 	"github.com/alexmarian/slp/internal/database"
 	"log"
 	"net/http"
@@ -31,6 +33,22 @@ func MiddlewareLog(next http.Handler) http.Handler {
 		log.Printf("%s %s", r.Method, r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
+}
+func (cfg *ApiConfig) MiddlewareAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token, err := auth.GetBearerToken(r.Header)
+		if err != nil {
+			respondWithError(w, http.StatusUnauthorized, err.Error())
+			return
+		}
+		userId, err := auth.ValidateJWT(token, cfg.Secret)
+		if err != nil {
+			respondWithError(w, http.StatusUnauthorized, err.Error())
+			return
+		}
+		ctx := context.WithValue(r.Context(), "userID", userId)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
 }
 
 func (cfg *ApiConfig) HandleMetrics(rw http.ResponseWriter, req *http.Request) {

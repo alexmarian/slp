@@ -6,8 +6,7 @@ import (
 )
 
 type ChirpCreationRequest struct {
-	Body   string    `json:"body"`
-	UserId uuid.UUID `json:"user_id"`
+	Body string `json:"body"`
 }
 type Chirp struct {
 	Id        uuid.UUID `json:"id"`

@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/alexmarian/slp/internal/auth"
+	"github.com/alexmarian/slp/internal/database"
 	"log"
 	"net/http"
 	"time"
 )
 
-func HandleLogin(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
+func HandleLogin(cfg *ApiConfig) http.HandlerFunc {
 	type parameters struct {
 		Password         string `json:"password"`
 		Email            string `json:"email"`
@@ -17,7 +18,8 @@ func HandleLogin(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 	}
 	type response struct {
 		User
-		Token string `json:"token,omitempty"`
+		Token        string `json:"token,omitempty"`
+		RefreshToken string `json:"refresh_token,omitempty"`
 	}
 	return func(rw http.ResponseWriter, req *http.Request) {
 		decoder := json.NewDecoder(req.Body)
@@ -42,7 +44,23 @@ func HandleLogin(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 			respondWithError(rw, http.StatusUnauthorized, "Incorrect email or password")
 			return
 		}
-		token, err := auth.MakeJWT(user.ID, cfg.Secret, time.Duration(request.ExpiresInSeconds)*time.Second)
+		seconds := 3600
+		if request.ExpiresInSeconds != 0 {
+			seconds = request.ExpiresInSeconds
+		}
+		refreshToken, err := auth.MakeRefreshToken()
+		if err != nil {
+			respondWithError(rw, http.StatusInternalServerError, "Error creating refresh token")
+			return
+		}
+		rt, err := cfg.Db.CreateRefreshToken(req.Context(), database.CreateRefreshTokenParams{
+			Token:  refreshToken,
+			UserID: user.ID,
+		})
+		if err != nil {
+			respondWithError(rw, http.StatusInternalServerError, "Error creating refresh token")
+		}
+		token, err := auth.MakeJWT(user.ID, cfg.Secret, time.Duration(seconds)*time.Second)
 		if err != nil {
 			respondWithError(rw, http.StatusInternalServerError, "Error creating token")
 			return
@@ -54,8 +72,36 @@ func HandleLogin(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 				UpdatedAt: user.UpdatedAt,
 				Email:     user.Email,
 			},
-			Token: token,
+			Token:        token,
+			RefreshToken: rt.Token,
 		}
 		respondWithJSON(rw, http.StatusOK, usr)
+	}
+}
+
+func HandleRefresh(cfg *ApiConfig) http.HandlerFunc {
+	type response struct {
+		Token string `json:"token,omitempty"`
+	}
+	return func(rw http.ResponseWriter, req *http.Request) {
+		refreshToken, err := auth.GetBearerToken(req.Header)
+		if err != nil {
+			respondWithError(rw, http.StatusUnauthorized, "Invalid token")
+			return
+		}
+		rt, err := cfg.Db.GetValidRefreshToken(req.Context(), refreshToken)
+		if err != nil {
+			respondWithError(rw, http.StatusUnauthorized, "Invalid token")
+			return
+		}
+		token, err := auth.MakeJWT(rt.UserID, cfg.Secret, 3600*time.Second)
+		if err != nil {
+			respondWithError(rw, http.StatusInternalServerError, "Error creating token")
+			return
+		}
+		resp := response{
+			Token: token,
+		}
+		respondWithJSON(rw, http.StatusOK, resp)
 	}
 }
