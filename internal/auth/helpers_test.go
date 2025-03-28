@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"github.com/google/uuid"
 	"testing"
+	"time"
 )
 
 func TestHashPassword(t *testing.T) {
@@ -54,6 +56,53 @@ func TestHashPassword(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckPasswordHash() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func TestMakeJWT(t *testing.T) {
+	password1 := "correctPassword123!"
+	password2 := "anotherPassword456!"
+
+	tests := []struct {
+		name           string
+		makePassword   string
+		verifyPassword string
+		expiration     time.Duration
+		wantErr        bool
+	}{
+		{name: "Correct password",
+			makePassword:   password1,
+			verifyPassword: password1,
+			expiration:     1 * time.Hour,
+			wantErr:        false,
+		},
+		{name: "Wrong  password",
+			makePassword:   password1,
+			verifyPassword: password2,
+			expiration:     1 * time.Hour,
+			wantErr:        true,
+		},
+		{name: "Expiration password",
+			makePassword:   password1,
+			verifyPassword: password1,
+			expiration:     1 * time.Millisecond,
+			wantErr:        true,
+		},
+	}
+	userId := uuid.New()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			jwt, err := MakeJWT(userId, tt.makePassword, tt.expiration)
+			if err != nil {
+				t.Errorf("MakeJWT() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			time.Sleep(2 * time.Millisecond)
+			_, err = ValidateJWT(jwt, tt.verifyPassword)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateJWT() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
 		})
 	}
 }
