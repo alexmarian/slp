@@ -12,6 +12,7 @@ type ApiConfig struct {
 	fileserverHits atomic.Int32
 	Db             *database.Queries
 	Platform       string
+	Secret         string
 }
 
 func (api *ApiConfig) IsDev() bool {

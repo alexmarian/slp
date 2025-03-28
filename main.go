@@ -19,6 +19,7 @@ func main() {
 	godotenv.Load(".env")
 	dbUrl := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
+	secret := os.Getenv("SECRET")
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
@@ -27,6 +28,7 @@ func main() {
 	apiCfg := &handlers.ApiConfig{
 		Db:       dbQueries,
 		Platform: platform,
+		Secret:   secret,
 	}
 
 	mux := http.NewServeMux()
