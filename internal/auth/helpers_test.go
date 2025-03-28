@@ -106,3 +106,41 @@ func TestMakeJWT(t *testing.T) {
 		})
 	}
 }
+
+func TestGetBearerToken(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		headers map[string][]string
+		wantErr bool
+	}{
+		{name: "Empty headers",
+			headers: make(map[string][]string, 0),
+			wantErr: true,
+		},
+		{name: "No Authorization headers",
+			headers: map[string][]string{"Bla1": {"1"}, "Bla2": {"1"}},
+			wantErr: true,
+		},
+		{name: "Empty Authorization headers",
+			headers: map[string][]string{"Authorization": {}, "Bla": {"2"}},
+			wantErr: true,
+		},
+		{name: "No bearer Authorization headers",
+			headers: map[string][]string{"Authorization": {"12312"}},
+			wantErr: true,
+		},
+		{name: "Nice authorization headers",
+			headers: map[string][]string{"Authorization": {"Bearer 12312"}},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := GetBearerToken(tt.headers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateJWT() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
