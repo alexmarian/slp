@@ -18,30 +18,31 @@ func HandleCreateUser(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 		if err != nil {
 			var errors = fmt.Sprintf("Error decoding create user request: %s", err)
 			log.Printf(errors)
-			respondWithError(rw, http.StatusBadRequest, errors)
+			RespondWithError(rw, http.StatusBadRequest, errors)
 			return
 		}
 		password, err := auth.HashPassword(request.Password)
 		if err != nil {
 			var errors = fmt.Sprintf("Error hashing password: %s", err)
 			log.Printf(errors)
-			respondWithError(rw, http.StatusInternalServerError, errors)
+			RespondWithError(rw, http.StatusInternalServerError, errors)
 			return
 		}
 		user, err := cfg.Db.CreateUser(req.Context(), database.CreateUserParams{request.Email, password})
 		if err != nil {
 			var errors = fmt.Sprintf("Error creating user: %s", err)
 			log.Printf(errors)
-			respondWithError(rw, http.StatusInternalServerError, errors)
+			RespondWithError(rw, http.StatusInternalServerError, errors)
 			return
 		}
 		response := User{
-			Id:        user.ID,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Email:     user.Email,
+			Id:          user.ID,
+			CreatedAt:   user.CreatedAt,
+			UpdatedAt:   user.UpdatedAt,
+			Email:       user.Email,
+			IsChirpyRed: user.IsChirpyRed,
 		}
-		respondWithJSON(rw, http.StatusCreated, response)
+		RespondWithJSON(rw, http.StatusCreated, response)
 	}
 }
 
@@ -58,30 +59,31 @@ func HandleUpdateUser(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 		if err != nil {
 			var errors = fmt.Sprintf("Error decoding update user request: %s", err)
 			log.Printf(errors)
-			respondWithError(rw, http.StatusBadRequest, errors)
+			RespondWithError(rw, http.StatusBadRequest, errors)
 			return
 		}
 		password, err := auth.HashPassword(request.Password)
 		if err != nil {
 			var errors = fmt.Sprintf("Error hashing password: %s", err)
 			log.Printf(errors)
-			respondWithError(rw, http.StatusInternalServerError, errors)
+			RespondWithError(rw, http.StatusInternalServerError, errors)
 			return
 		}
 		user, err := cfg.Db.UpdateUserEmailAndPassword(req.Context(), database.UpdateUserEmailAndPasswordParams{
-			password, request.Email, getUserIdFromContext(req)})
+			password, request.Email, GetUserIdFromContext(req)})
 		if err != nil {
 			var errors = fmt.Sprintf("Error creating user: %s", err)
 			log.Printf(errors)
-			respondWithError(rw, http.StatusInternalServerError, errors)
+			RespondWithError(rw, http.StatusInternalServerError, errors)
 			return
 		}
 		response := User{
-			Id:        user.ID,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Email:     user.Email,
+			Id:          user.ID,
+			CreatedAt:   user.CreatedAt,
+			UpdatedAt:   user.UpdatedAt,
+			Email:       user.Email,
+			IsChirpyRed: user.IsChirpyRed,
 		}
-		respondWithJSON(rw, http.StatusOK, response)
+		RespondWithJSON(rw, http.StatusOK, response)
 	}
 }

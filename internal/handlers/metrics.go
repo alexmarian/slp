@@ -14,6 +14,7 @@ type ApiConfig struct {
 	Db             *database.Queries
 	Platform       string
 	Secret         string
+	PolkaKey       string
 }
 
 func (api *ApiConfig) IsDev() bool {
@@ -37,15 +38,15 @@ func (cfg *ApiConfig) MiddlewareAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, err := auth.GetBearerToken(r.Header)
 		if err != nil {
-			respondWithError(w, http.StatusUnauthorized, err.Error())
+			RespondWithError(w, http.StatusUnauthorized, err.Error())
 			return
 		}
 		userId, err := auth.ValidateJWT(token, cfg.Secret)
 		if err != nil {
-			respondWithError(w, http.StatusUnauthorized, err.Error())
+			RespondWithError(w, http.StatusUnauthorized, err.Error())
 			return
 		}
-		next.ServeHTTP(w, addUserIdToContext(r, userId))
+		next.ServeHTTP(w, AddUserIdToContext(r, userId))
 	}
 }
 
@@ -71,6 +72,6 @@ func (cfg *ApiConfig) HandleReset(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 		rw.Write([]byte("Metrics reset"))
 	} else {
-		respondWithError(rw, http.StatusForbidden, "Reset only allowed in dev")
+		RespondWithError(rw, http.StatusForbidden, "Reset only allowed in dev")
 	}
 }

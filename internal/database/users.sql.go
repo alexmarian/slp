@@ -12,12 +12,12 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, created_at, updated_at, email, hashed_password)
+INSERT INTO users (id, created_at, updated_at, email, hashed_password, is_chirpy_red)
 VALUES (gen_random_uuid(),
         NOW(),
         NOW(),
         $1,
-        $2) RETURNING id, email, created_at, updated_at, hashed_password
+        $2, false) RETURNING id, email, created_at, updated_at, hashed_password, is_chirpy_red
 `
 
 type CreateUserParams struct {
@@ -34,6 +34,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HashedPassword,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
@@ -49,7 +50,7 @@ func (q *Queries) DeleteUsers(ctx context.Context) error {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, created_at, updated_at, hashed_password
+SELECT id, email, created_at, updated_at, hashed_password, is_chirpy_red
 FROM users
 where email = $1
 `
@@ -63,6 +64,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HashedPassword,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
@@ -72,7 +74,7 @@ UPDATE users
 set hashed_password = $1,
     email           = $2,
     updated_at      = NOW()
-WHERE id = $3 RETURNING id, email, created_at, updated_at, hashed_password
+WHERE id = $3 RETURNING id, email, created_at, updated_at, hashed_password, is_chirpy_red
 `
 
 type UpdateUserEmailAndPasswordParams struct {
@@ -90,6 +92,18 @@ func (q *Queries) UpdateUserEmailAndPassword(ctx context.Context, arg UpdateUser
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HashedPassword,
+		&i.IsChirpyRed,
 	)
 	return i, err
+}
+
+const updateUserToChirpyRed = `-- name: UpdateUserToChirpyRed :exec
+UPDATE users
+SET is_chirpy_red = true
+WHERE id = $1
+`
+
+func (q *Queries) UpdateUserToChirpyRed(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, updateUserToChirpyRed, id)
+	return err
 }

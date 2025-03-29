@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"github.com/alexmarian/slp/internal/database"
+	"github.com/alexmarian/slp/internal/webhooks"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"os"
@@ -20,6 +21,8 @@ func main() {
 	dbUrl := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
 	secret := os.Getenv("SECRET")
+	polkaKey := os.Getenv("POLKA_KEY")
+
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
@@ -29,6 +32,7 @@ func main() {
 		Db:       dbQueries,
 		Platform: platform,
 		Secret:   secret,
+		PolkaKey: polkaKey,
 	}
 
 	mux := http.NewServeMux()
@@ -38,11 +42,14 @@ func main() {
 	mux.HandleFunc("POST /api/chirps", apiCfg.MiddlewareAuth(handlers.HandleCreateChirp(apiCfg)))
 	mux.HandleFunc("GET /api/chirps", handlers.HandleGetChirps(apiCfg))
 	mux.HandleFunc("GET /api/chirps/{chirpID}", handlers.HandleGetChirp(apiCfg))
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.MiddlewareAuth(handlers.HandleDeleteChirp(apiCfg)))
 	mux.HandleFunc("POST /api/users", handlers.HandleCreateUser(apiCfg))
 	mux.HandleFunc("PUT /api/users", apiCfg.MiddlewareAuth(handlers.HandleUpdateUser(apiCfg)))
 	mux.HandleFunc("POST /api/login", handlers.HandleLogin(apiCfg))
 	mux.HandleFunc("POST /api/revoke", handlers.HandleRevokeRefreshToken(apiCfg))
 	mux.HandleFunc("POST /api/refresh", handlers.HandleRefresh(apiCfg))
+
+	mux.HandleFunc("POST /api/polka/webhooks", webhooks.HandleUpdateChirpyRed(apiCfg))
 
 	mux.HandleFunc("GET /admin/metrics", apiCfg.HandleMetrics)
 	mux.HandleFunc("POST /admin/reset", apiCfg.HandleReset)

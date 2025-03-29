@@ -29,19 +29,19 @@ func HandleLogin(cfg *ApiConfig) http.HandlerFunc {
 		if err != nil {
 			var errors = fmt.Sprintf("Error decoding login user request: %s", err)
 			log.Printf(errors)
-			respondWithError(rw, http.StatusBadRequest, errors)
+			RespondWithError(rw, http.StatusBadRequest, errors)
 			return
 		}
 		user, err := cfg.Db.GetUserByEmail(req.Context(), request.Email)
 		if err != nil {
 			var errors = fmt.Sprintf("Error getting user: %s", err)
 			log.Printf(errors)
-			respondWithError(rw, http.StatusInternalServerError, errors)
+			RespondWithError(rw, http.StatusInternalServerError, errors)
 			return
 		}
 		err = auth.CheckPasswordHash(request.Password, user.HashedPassword)
 		if err != nil {
-			respondWithError(rw, http.StatusUnauthorized, "Incorrect email or password")
+			RespondWithError(rw, http.StatusUnauthorized, "Incorrect email or password")
 			return
 		}
 		seconds := 3600
@@ -50,7 +50,7 @@ func HandleLogin(cfg *ApiConfig) http.HandlerFunc {
 		}
 		refreshToken, err := auth.MakeRefreshToken()
 		if err != nil {
-			respondWithError(rw, http.StatusInternalServerError, "Error creating refresh token")
+			RespondWithError(rw, http.StatusInternalServerError, "Error creating refresh token")
 			return
 		}
 		rt, err := cfg.Db.CreateRefreshToken(req.Context(), database.CreateRefreshTokenParams{
@@ -58,24 +58,25 @@ func HandleLogin(cfg *ApiConfig) http.HandlerFunc {
 			UserID: user.ID,
 		})
 		if err != nil {
-			respondWithError(rw, http.StatusInternalServerError, "Error creating refresh token")
+			RespondWithError(rw, http.StatusInternalServerError, "Error creating refresh token")
 		}
 		token, err := auth.MakeJWT(user.ID, cfg.Secret, time.Duration(seconds)*time.Second)
 		if err != nil {
-			respondWithError(rw, http.StatusInternalServerError, "Error creating token")
+			RespondWithError(rw, http.StatusInternalServerError, "Error creating token")
 			return
 		}
 		usr := response{
 			User: User{
-				Id:        user.ID,
-				CreatedAt: user.CreatedAt,
-				UpdatedAt: user.UpdatedAt,
-				Email:     user.Email,
+				Id:          user.ID,
+				CreatedAt:   user.CreatedAt,
+				UpdatedAt:   user.UpdatedAt,
+				Email:       user.Email,
+				IsChirpyRed: user.IsChirpyRed,
 			},
 			Token:        token,
 			RefreshToken: rt.Token,
 		}
-		respondWithJSON(rw, http.StatusOK, usr)
+		RespondWithJSON(rw, http.StatusOK, usr)
 	}
 }
 
@@ -86,23 +87,23 @@ func HandleRefresh(cfg *ApiConfig) http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		refreshToken, err := auth.GetBearerToken(req.Header)
 		if err != nil {
-			respondWithError(rw, http.StatusUnauthorized, "Invalid token")
+			RespondWithError(rw, http.StatusUnauthorized, "Invalid token")
 			return
 		}
 		rt, err := cfg.Db.GetValidRefreshToken(req.Context(), refreshToken)
 		if err != nil {
-			respondWithError(rw, http.StatusUnauthorized, "Invalid token")
+			RespondWithError(rw, http.StatusUnauthorized, "Invalid token")
 			return
 		}
 		token, err := auth.MakeJWT(rt.UserID, cfg.Secret, 3600*time.Second)
 		if err != nil {
-			respondWithError(rw, http.StatusInternalServerError, "Error creating token")
+			RespondWithError(rw, http.StatusInternalServerError, "Error creating token")
 			return
 		}
 		resp := response{
 			Token: token,
 		}
 		//rw.Header().Set("Set-Cookie", fmt.Sprintf("id=a3fWa; Expires=%s; Secure; HttpOnly", time.Now().Add(3600*time.Second).UTC().Format(time.RFC1123)))
-		respondWithJSON(rw, http.StatusOK, resp)
+		RespondWithJSON(rw, http.StatusOK, resp)
 	}
 }

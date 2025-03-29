@@ -18,13 +18,13 @@ func HandleCreateChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) 
 		if err != nil {
 			var errors = fmt.Sprintf("Error decoding chirp: %s", err)
 			log.Printf(errors)
-			respondWithError(w, http.StatusBadRequest, errors)
+			RespondWithError(w, http.StatusBadRequest, errors)
 			return
 		}
 		if len(chirp.Body) > 140 {
 			response := Chirp{}
 			response.Body = "Chirp is too long"
-			respondWithJSON(w, http.StatusBadRequest, response)
+			RespondWithJSON(w, http.StatusBadRequest, response)
 			return
 		}
 		badWords := map[string]struct{}{
@@ -34,13 +34,13 @@ func HandleCreateChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) 
 		}
 		ccp := database.CreateChirpParams{
 			Body:   chirp.Body,
-			UserID: getUserIdFromContext(r),
+			UserID: GetUserIdFromContext(r),
 		}
 		createChirp, err := cfg.Db.CreateChirp(r.Context(), ccp)
 		if err != nil {
 			var errors = fmt.Sprintf("Error creating chirp: %s", err)
 			log.Printf(errors)
-			respondWithError(w, http.StatusInternalServerError, errors)
+			RespondWithError(w, http.StatusInternalServerError, errors)
 			return
 		}
 		response := Chirp{
@@ -51,7 +51,7 @@ func HandleCreateChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) 
 			UserId:    createChirp.UserID,
 		}
 		response.Body = cleanBody(chirp.Body, badWords)
-		respondWithJSON(w, http.StatusCreated, response)
+		RespondWithJSON(w, http.StatusCreated, response)
 	}
 }
 
@@ -71,7 +71,7 @@ func HandleGetChirps(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 		if err != nil {
 			var errors = fmt.Sprintf("Error getting chirps: %s", err)
 			log.Printf(errors)
-			respondWithError(w, http.StatusInternalServerError, errors)
+			RespondWithError(w, http.StatusInternalServerError, errors)
 			return
 		}
 		var response []Chirp
@@ -84,7 +84,7 @@ func HandleGetChirps(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 				UserId:    chirp.UserID,
 			})
 		}
-		respondWithJSON(w, http.StatusOK, response)
+		RespondWithJSON(w, http.StatusOK, response)
 	}
 }
 func HandleGetChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
@@ -93,22 +93,52 @@ func HandleGetChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 		if parseIdErr != nil {
 			var errors = fmt.Sprintf("Error parsing chirp ID: %s", parseIdErr)
 			log.Printf(errors)
-			respondWithError(w, http.StatusBadRequest, errors)
+			RespondWithError(w, http.StatusBadRequest, errors)
 			return
 		}
 		chirp, err := cfg.Db.GetChirpById(r.Context(), chirpID)
 		if err != nil {
-			var errors = fmt.Sprintf("Error getting chirps: %s", err)
-			log.Printf(errors)
-			respondWithError(w, http.StatusInternalServerError, errors)
+			log.Printf("Error getting chirp: %s", err)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		respondWithJSON(w, http.StatusOK, Chirp{
+		RespondWithJSON(w, http.StatusOK, Chirp{
 			Id:        chirp.ID,
 			CreatedAt: chirp.CreatedAt,
 			UpdatedAt: chirp.UpdatedAt,
 			Body:      chirp.Body,
 			UserId:    chirp.UserID,
 		})
+	}
+}
+func HandleDeleteChirp(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		chirpID, parseIdErr := uuid.Parse(r.PathValue("chirpID"))
+		if parseIdErr != nil {
+			var errors = fmt.Sprintf("Error parsing chirp ID: %s", parseIdErr)
+			log.Printf(errors)
+			RespondWithError(w, http.StatusBadRequest, errors)
+			return
+		}
+		chirp, err := cfg.Db.GetChirpById(r.Context(), chirpID)
+		if err != nil {
+			log.Printf("Error getting chirp: %s", err)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		userId := GetUserIdFromContext(r)
+		if chirp.UserID != userId {
+			log.Printf("Error deleting chirp: %s", err)
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		err = cfg.Db.DeleteChirpById(r.Context(), chirp.ID)
+		if err != nil {
+			var errors = fmt.Sprintf("Error deleting chirp: %s", err)
+			log.Printf(errors)
+			RespondWithError(w, http.StatusInternalServerError, errors)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

@@ -62,15 +62,34 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 }
 
 func GetBearerToken(headers http.Header) (string, error) {
+	authorizationHeaderParts, s, err := getAuthorizationHeadersParts(headers)
+	if err != nil {
+		return s, err
+	}
+	if authorizationHeaderParts[0] != "Bearer" {
+		return "", errors.New("Authorization header is invalid")
+	}
+	return authorizationHeaderParts[1], nil
+}
+
+func getAuthorizationHeadersParts(headers http.Header) ([]string, string, error) {
 	authorizationHeader := headers.Get("Authorization")
 	if authorizationHeader == "" {
-		return "", errors.New("Authorization header is missing")
+		return nil, "", errors.New("Authorization header is missing")
 	}
 	authorizationHeaderParts := strings.Split(authorizationHeader, " ")
 	if len(authorizationHeaderParts) != 2 {
-		return "", errors.New("Authorization header is invalid")
+		return nil, "", errors.New("Authorization header is invalid")
 	}
-	if authorizationHeaderParts[0] != "Bearer" {
+	return authorizationHeaderParts, "", nil
+}
+
+func GetApiKey(headers http.Header) (string, error) {
+	authorizationHeaderParts, s, err := getAuthorizationHeadersParts(headers)
+	if err != nil {
+		return s, err
+	}
+	if authorizationHeaderParts[0] != "ApiKey" {
 		return "", errors.New("Authorization header is invalid")
 	}
 	return authorizationHeaderParts[1], nil

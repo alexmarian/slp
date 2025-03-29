@@ -10,12 +10,12 @@ import (
 
 const userContextKey = "userID"
 
-func respondWithError(w http.ResponseWriter, code int, msg string) {
+func RespondWithError(w http.ResponseWriter, code int, msg string) {
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(code)
 	w.Write([]byte(msg))
 }
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
 	data, err := json.Marshal(payload)
@@ -27,10 +27,10 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Write(data)
 }
 
-func addUserIdToContext(req *http.Request, userID uuid.UUID) *http.Request {
+func AddUserIdToContext(req *http.Request, userID uuid.UUID) *http.Request {
 	return req.WithContext(context.WithValue(req.Context(), userContextKey, userID))
 }
 
-func getUserIdFromContext(req *http.Request) uuid.UUID {
+func GetUserIdFromContext(req *http.Request) uuid.UUID {
 	return req.Context().Value(userContextKey).(uuid.UUID)
 }
