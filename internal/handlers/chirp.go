@@ -67,12 +67,32 @@ func cleanBody(body string, badWords map[string]struct{}) string {
 
 func HandleGetChirps(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		chirps, err := cfg.Db.GetAllChirps(r.Context())
-		if err != nil {
-			var errors = fmt.Sprintf("Error getting chirps: %s", err)
-			log.Printf(errors)
-			RespondWithError(w, http.StatusInternalServerError, errors)
-			return
+		authorID := r.URL.Query().Get("author_id")
+		var chirps []database.Chirp
+		if authorID != "" {
+			authorUuid, err := uuid.Parse(authorID)
+			if err != nil {
+				var errors = fmt.Sprintf("Error parsing author ID: %s", err)
+				log.Printf(errors)
+				RespondWithError(w, http.StatusBadRequest, errors)
+				return
+			}
+			chirps, err = cfg.Db.GetAllChirpsByAuthorId(r.Context(), authorUuid)
+			if err != nil {
+				var errors = fmt.Sprintf("Error getting chirps: %s", err)
+				log.Printf(errors)
+				RespondWithError(w, http.StatusInternalServerError, errors)
+				return
+			}
+		} else {
+			var err error
+			chirps, err = cfg.Db.GetAllChirps(r.Context())
+			if err != nil {
+				var errors = fmt.Sprintf("Error getting chirps: %s", err)
+				log.Printf(errors)
+				RespondWithError(w, http.StatusInternalServerError, errors)
+				return
+			}
 		}
 		var response []Chirp
 		for _, chirp := range chirps {
