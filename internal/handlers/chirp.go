@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -95,6 +96,12 @@ func HandleGetChirps(cfg *ApiConfig) func(http.ResponseWriter, *http.Request) {
 			}
 		}
 		var response []Chirp
+		sortDirection := r.URL.Query().Get("sort")
+		if sortDirection == "desc" {
+			sort.Slice(chirps, func(i, j int) bool {
+				return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+			})
+		}
 		for _, chirp := range chirps {
 			response = append(response, Chirp{
 				Id:        chirp.ID,
